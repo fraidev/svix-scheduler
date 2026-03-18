@@ -8,6 +8,8 @@ use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or("postgres://postgres:postgres@localhost/scheduler".into());
 
@@ -30,7 +32,7 @@ async fn main() {
     let shutdown_token = token.clone();
     tokio::spawn(async move {
         tokio::signal::ctrl_c().await.ok();
-        println!("Shutting down...");
+        tracing::info!("Shutting down...");
         shutdown_token.cancel();
     });
 

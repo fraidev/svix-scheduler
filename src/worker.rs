@@ -21,7 +21,7 @@ pub async fn run(pool: PgPool, token: CancellationToken) {
 
     loop {
         if token.is_cancelled() {
-            println!("Worker shutting down");
+            tracing::info!("Worker shutting down");
             return;
         }
 
@@ -37,7 +37,7 @@ pub async fn run(pool: PgPool, token: CancellationToken) {
                         let _ = db::complete_task(&pool, task.id).await;
                     }
                     Err(e) => {
-                        eprintln!("Task {} failed: {e}", task.id);
+                        tracing::error!(task_id = %task.id, error = %e, "Task failed");
                         let _ = db::fail_task(&pool, task.id).await;
                     }
                 }
@@ -49,7 +49,7 @@ pub async fn run(pool: PgPool, token: CancellationToken) {
                 }
             }
             Err(e) => {
-                eprintln!("Error claiming task: {e}");
+                tracing::error!(error = %e, "Error claiming task");
                 tokio::select! {
                     () = tokio::time::sleep(Duration::from_secs(1)) => {}
                     () = token.cancelled() => {}
@@ -74,7 +74,7 @@ async fn execute_webhook(
         .await
         .map_err(|e| e.to_string())?;
 
-    println!("Webhook {url} responded with status {}", resp.status());
+    tracing::info!(url, status = %resp.status(), "Webhook delivered");
     Ok(())
 }
 
@@ -96,6 +96,6 @@ async fn execute_hash(payload: &serde_json::Value) -> Result<(), String> {
     .await
     .map_err(|e| e.to_string())?;
 
-    println!("Hash result: {encoded}");
+    tracing::info!(result = %encoded, "Hash computed");
     Ok(())
 }
