@@ -34,11 +34,15 @@ pub async fn run(pool: PgPool, token: CancellationToken) {
                 };
                 match result {
                     Ok(()) => {
-                        let _ = db::complete_task(&pool, task.id).await;
+                        if let Err(e) = db::complete_task(&pool, task.id).await {
+                            tracing::error!(task_id = %task.id, error = %e, "Failed to mark task as completed");
+                        }
                     }
                     Err(e) => {
                         tracing::error!(task_id = %task.id, error = %e, "Task failed");
-                        let _ = db::fail_task(&pool, task.id).await;
+                        if let Err(e) = db::fail_task(&pool, task.id).await {
+                            tracing::error!(task_id = %task.id, error = %e, "Failed to mark task as failed");
+                        }
                     }
                 }
             }
