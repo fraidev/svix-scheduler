@@ -1,6 +1,7 @@
 mod api;
 mod db;
 mod models;
+mod worker;
 
 use sqlx::postgres::PgPoolOptions;
 
@@ -18,7 +19,7 @@ async fn main() {
     tokio::spawn({
         let pool = pool.clone();
         async move {
-            // TODO: implement worker loop
+            worker::run(pool).await;
         }
     });
 
