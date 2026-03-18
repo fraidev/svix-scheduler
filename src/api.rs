@@ -21,7 +21,7 @@ pub async fn run(pool: PgPool, token: tokio_util::sync::CancellationToken) -> Re
         .route("/tasks/{id}", delete(delete_task))
         .with_state(pool);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app)
         .with_graceful_shutdown(token.cancelled_owned())
         .await
