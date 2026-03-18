@@ -4,9 +4,18 @@ use rand::RngCore;
 use sha2::Sha256;
 use sqlx::PgPool;
 use std::time::Duration;
+use tokio::task::JoinHandle;
 
 use crate::db;
 use crate::models::TaskType;
+
+pub fn run_in_background(pool: PgPool) -> JoinHandle<()> {
+    tokio::spawn({
+        async move {
+            run(pool).await;
+        }
+    })
+}
 
 pub async fn run(pool: PgPool) {
     let client = reqwest::Client::new();

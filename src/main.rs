@@ -7,8 +7,8 @@ use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
 async fn main() {
-    let database_url =
-        std::env::var("DATABASE_URL").unwrap_or("postgres://postgres:postgres@localhost/scheduler".into());
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or("postgres://postgres:postgres@localhost/scheduler".into());
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -21,12 +21,7 @@ async fn main() {
         .await
         .expect("Failed to run migrations");
 
-    tokio::spawn({
-        let pool = pool.clone();
-        async move {
-            worker::run(pool).await;
-        }
-    });
+    worker::run_in_background(pool.clone());
 
     api::run(pool).await;
 }
