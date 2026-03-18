@@ -68,7 +68,10 @@ async fn execute_webhook(
 }
 
 async fn execute_hash(payload: &serde_json::Value) -> Result<(), String> {
-    let secret = payload["secret"].as_str().ok_or("missing secret")?.to_owned();
+    let secret = payload["secret"]
+        .as_str()
+        .ok_or("missing secret")?
+        .to_owned();
 
     let encoded = tokio::task::spawn_blocking(move || {
         let mut salt = [0u8; 16];

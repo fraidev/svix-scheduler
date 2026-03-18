@@ -1,8 +1,8 @@
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
     routing::{delete, get, post},
-    Json, Router,
 };
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -19,9 +19,7 @@ pub async fn run(pool: PgPool) {
         .route("/tasks/{id}", delete(delete_task))
         .with_state(pool);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -53,10 +51,7 @@ async fn create_task(
             execute_at,
             serde_json::json!({ "url": url, "body": body }),
         ),
-        CreateTaskRequest::Hash {
-            execute_at,
-            secret,
-        } => (
+        CreateTaskRequest::Hash { execute_at, secret } => (
             TaskType::Hash,
             execute_at,
             serde_json::json!({ "secret": secret }),
