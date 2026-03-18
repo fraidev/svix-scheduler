@@ -17,6 +17,7 @@ pub fn run_in_background(pool: PgPool, token: CancellationToken) -> JoinHandle<(
 }
 
 pub async fn run(pool: PgPool, token: CancellationToken) {
+    tracing::info!("Worker started");
     let client = reqwest::Client::new();
 
     loop {

@@ -6,12 +6,14 @@ use axum::{
 };
 use serde::Deserialize;
 use sqlx::PgPool;
+use std::io::Error;
 use uuid::Uuid;
 
 use crate::db;
 use crate::models::{Task, TaskState, TaskType};
 
-pub async fn run(pool: PgPool, token: tokio_util::sync::CancellationToken) {
+pub async fn run(pool: PgPool, token: tokio_util::sync::CancellationToken) -> Result<(), Error> {
+    tracing::info!("Starting API server on port 3000");
     let app = Router::new()
         .route("/tasks", post(create_task))
         .route("/tasks", get(list_tasks))
@@ -23,7 +25,6 @@ pub async fn run(pool: PgPool, token: tokio_util::sync::CancellationToken) {
     axum::serve(listener, app)
         .with_graceful_shutdown(token.cancelled_owned())
         .await
-        .unwrap();
 }
 
 #[derive(Deserialize)]
