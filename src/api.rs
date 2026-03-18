@@ -49,16 +49,26 @@ async fn create_task(
             execute_at,
             url,
             body,
-        } => (
-            TaskType::Webhook,
-            execute_at,
-            serde_json::json!({ "url": url, "body": body }),
-        ),
-        CreateTaskRequest::Hash { execute_at, secret } => (
-            TaskType::Hash,
-            execute_at,
-            serde_json::json!({ "secret": secret }),
-        ),
+        } => {
+            if url.is_empty() {
+                return Err((StatusCode::BAD_REQUEST, "url must not be empty".into()));
+            }
+            (
+                TaskType::Webhook,
+                execute_at,
+                serde_json::json!({ "url": url, "body": body }),
+            )
+        }
+        CreateTaskRequest::Hash { execute_at, secret } => {
+            if secret.is_empty() {
+                return Err((StatusCode::BAD_REQUEST, "secret must not be empty".into()));
+            }
+            (
+                TaskType::Hash,
+                execute_at,
+                serde_json::json!({ "secret": secret }),
+            )
+        }
     };
 
     let task = db::create_task(&pool, task_type, execute_at, payload)
