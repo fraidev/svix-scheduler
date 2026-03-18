@@ -5,24 +5,29 @@ use sha2::Sha256;
 use sqlx::PgPool;
 use std::time::Duration;
 use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 
 use crate::db;
 use crate::models::TaskType;
 
-pub fn run_in_background(pool: PgPool) -> JoinHandle<()> {
-    tokio::spawn({
-        async move {
-            run(pool).await;
-        }
+pub fn run_in_background(pool: PgPool, token: CancellationToken) -> JoinHandle<()> {
+    tokio::spawn(async move {
+        run(pool, token).await;
     })
 }
 
-pub async fn run(pool: PgPool) {
+pub async fn run(pool: PgPool, token: CancellationToken) {
     let client = reqwest::Client::new();
 
     loop {
+        if token.is_cancelled() {
+            println!("Worker shutting down");
+            return;
+        }
+
         match db::claim_pending_task(&pool).await {
             Ok(Some(task)) => {
+                // Finish the claimed task even if shutdown was requested
                 let result = match task.task_type {
                     TaskType::Webhook => execute_webhook(&client, &task.payload).await,
                     TaskType::Hash => execute_hash(&task.payload).await,
@@ -38,11 +43,17 @@ pub async fn run(pool: PgPool) {
                 }
             }
             Ok(None) => {
-                tokio::time::sleep(Duration::from_secs(1)).await;
+                tokio::select! {
+                    () = tokio::time::sleep(Duration::from_secs(1)) => {}
+                    () = token.cancelled() => {}
+                }
             }
             Err(e) => {
                 eprintln!("Error claiming task: {e}");
-                tokio::time::sleep(Duration::from_secs(1)).await;
+                tokio::select! {
+                    () = tokio::time::sleep(Duration::from_secs(1)) => {}
+                    () = token.cancelled() => {}
+                }
             }
         }
     }

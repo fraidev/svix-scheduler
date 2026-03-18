@@ -4,6 +4,7 @@ mod models;
 mod worker;
 
 use sqlx::postgres::PgPoolOptions;
+use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
 async fn main() {
@@ -21,7 +22,20 @@ async fn main() {
         .await
         .expect("Failed to run migrations");
 
-    worker::run_in_background(pool.clone());
+    let token = CancellationToken::new();
 
-    api::run(pool).await;
+    let worker_handle = worker::run_in_background(pool.clone(), token.clone());
+
+    // Cancel everything on Ctrl+C
+    let shutdown_token = token.clone();
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c().await.ok();
+        println!("Shutting down...");
+        shutdown_token.cancel();
+    });
+
+    api::run(pool, token).await;
+
+    // Wait for the worker to finish its current task
+    worker_handle.await.ok();
 }

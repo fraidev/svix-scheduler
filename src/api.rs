@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::db;
 use crate::models::{Task, TaskState, TaskType};
 
-pub async fn run(pool: PgPool) {
+pub async fn run(pool: PgPool, token: tokio_util::sync::CancellationToken) {
     let app = Router::new()
         .route("/tasks", post(create_task))
         .route("/tasks", get(list_tasks))
@@ -20,7 +20,10 @@ pub async fn run(pool: PgPool) {
         .with_state(pool);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app)
+        .with_graceful_shutdown(token.cancelled_owned())
+        .await
+        .unwrap();
 }
 
 #[derive(Deserialize)]
