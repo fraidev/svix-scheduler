@@ -68,15 +68,20 @@ async fn execute_webhook(
 }
 
 async fn execute_hash(payload: &serde_json::Value) -> Result<(), String> {
-    let secret = payload["secret"].as_str().ok_or("missing secret")?;
+    let secret = payload["secret"].as_str().ok_or("missing secret")?.to_owned();
 
-    let mut salt = [0u8; 16];
-    rand::thread_rng().fill_bytes(&mut salt);
+    let encoded = tokio::task::spawn_blocking(move || {
+        let mut salt = [0u8; 16];
+        rand::thread_rng().fill_bytes(&mut salt);
 
-    let mut derived = [0u8; 32];
-    pbkdf2_hmac::<Sha256>(secret.as_bytes(), &salt, 600_000, &mut derived);
+        let mut derived = [0u8; 32];
+        pbkdf2_hmac::<Sha256>(secret.as_bytes(), &salt, 600_000, &mut derived);
 
-    let encoded = base64::engine::general_purpose::STANDARD.encode(derived);
+        base64::engine::general_purpose::STANDARD.encode(derived)
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+
     println!("Hash result: {encoded}");
     Ok(())
 }

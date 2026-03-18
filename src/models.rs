@@ -23,6 +23,7 @@ pub enum TaskState {
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Task {
     pub id: Uuid,
+    #[allow(clippy::struct_field_names)]
     pub task_type: TaskType,
     pub state: TaskState,
     pub execute_at: DateTime<Utc>,
