@@ -208,4 +208,4 @@ All scripts accept `API_URL` env (defaults to `http://localhost:3000`).
 - **JSONB payload** — Each task type stores its own fields (`url`+`body` or `secret`) without extra columns.
 - **Logging** — Structured logging with `tracing` for better observability and debugging.
 - **Migrations on startup** — Ensures the database schema is always up-to-date without manual intervention. In production, a separate migration step might be preferable.
-- **No Backoff or retries** — For simplicity, failed tasks are marked as `failed` without retry logic. In a real system, you might want to implement retries with exponential backoff.
+- **Adaptive backoff** — The worker poll loop uses [`adaptive-backoff`](https://github.com/brhoades/adaptive-backoff) to self-tune its polling interval. Slows down after failures (up to 30s), recovers quickly after successes.

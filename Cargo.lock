@@ -3,6 +3,16 @@
 version = 4
 
 [[package]]
+name = "adaptive_backoff"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffd5e23cd33dd73c030d1c424967eb2fbdc917d89e0bdcf1162edc4cf504f756"
+dependencies = [
+ "anyhow",
+ "thiserror",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1924,6 +1934,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 name = "svix-scheduler"
 version = "0.1.0"
 dependencies = [
+ "adaptive_backoff",
  "axum",
  "base64",
  "chrono",
