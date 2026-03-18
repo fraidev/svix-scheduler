@@ -11,15 +11,17 @@ use uuid::Uuid;
 
 use crate::db;
 use crate::models::{Task, TaskState, TaskType};
+use crate::state::AppState;
 
-pub async fn run(pool: PgPool, token: tokio_util::sync::CancellationToken) -> Result<(), Error> {
+pub async fn run(state: AppState) -> Result<(), Error> {
     tracing::info!("Starting API server on port 3000");
+    let token = state.token.clone();
     let app = Router::new()
         .route("/tasks", post(create_task))
         .route("/tasks", get(list_tasks))
         .route("/tasks/{id}", get(get_task))
         .route("/tasks/{id}", delete(delete_task))
-        .with_state(pool);
+        .with_state(state.pool);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app)

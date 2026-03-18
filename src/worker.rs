@@ -6,11 +6,11 @@ use sha2::Sha256;
 use sqlx::PgPool;
 use std::time::Duration;
 use tokio::task::JoinHandle;
-use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::db;
 use crate::models::{TaskState, TaskType};
+use crate::state::AppState;
 
 const MAX_DB_RETRIES: usize = 5;
 const TASK_BACKOFF_MAX: Duration = Duration::from_secs(30);
@@ -19,37 +19,37 @@ const POLL_INTERVAL: Duration = Duration::from_secs(1);
 const BACKOFF_FACTOR: f64 = 1.1;
 const HASH_ITERATIONS: u32 = 600_000;
 
-pub fn run_in_background(pool: PgPool, token: CancellationToken) -> JoinHandle<()> {
+pub fn run_in_background(state: AppState) -> JoinHandle<()> {
     tokio::spawn(async move {
-        run(pool, token).await;
+        run(state).await;
     })
 }
 
-pub async fn run(pool: PgPool, token: CancellationToken) {
+pub async fn run(state: AppState) {
     tracing::info!("Worker started");
     let client = reqwest::Client::new();
 
     loop {
-        if token.is_cancelled() {
+        if state.token.is_cancelled() {
             tracing::info!("Worker shutting down");
             return;
         }
 
-        match db::claim_pending_task(&pool).await {
+        match db::claim_pending_task(&state.pool).await {
             Ok(Some(task)) => {
-                execute_task(&client, &pool, &task).await;
+                execute_task(&client, &state.pool, &task).await;
             }
             Ok(None) => {
                 tokio::select! {
                     () = tokio::time::sleep(POLL_INTERVAL) => {}
-                    () = token.cancelled() => {}
+                    () = state.token.cancelled() => {}
                 }
             }
             Err(e) => {
                 tracing::error!(error = %e, "Error claiming task");
                 tokio::select! {
                     () = tokio::time::sleep(POLL_INTERVAL) => {}
-                    () = token.cancelled() => {}
+                    () = state.token.cancelled() => {}
                 }
             }
         }
