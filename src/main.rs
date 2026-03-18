@@ -16,6 +16,11 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to run migrations");
+
     tokio::spawn({
         let pool = pool.clone();
         async move {
