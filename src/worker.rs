@@ -140,7 +140,10 @@ async fn execute_webhook(
         .await
         .map_err(|e| e.to_string())?;
 
-    tracing::info!(url, status = %resp.status(), "Webhook delivered");
+    // TODO: Maybe retry on 5xx
+    let status = resp.status();
+    tracing::info!(url, status = %status, "Webhook delivered");
+
     Ok(())
 }
 

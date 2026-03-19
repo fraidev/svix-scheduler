@@ -83,6 +83,7 @@ scripts/
   list_tasks.sh       — List tasks (optionally filtered by state)
   task_stats.sh       — Show task counts per state
   reset_db.sh         — Drop and recreate the database
+  test.sh             — Run integration tests
 ```
 
 ## Running modes
