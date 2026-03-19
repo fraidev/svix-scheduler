@@ -24,7 +24,15 @@ docker run -d --name scheduler-db \
   postgres:18.3
 ```
 
-### 2. Build and run
+### 2. Run tests
+
+```bash
+cargo test -- --test-threads=1
+```
+
+Tests run against the same database, so they must run serially.
+
+### 3. Build and run
 
 ```bash
 cargo run
